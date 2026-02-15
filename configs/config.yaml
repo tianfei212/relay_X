@@ -1,0 +1,12 @@
+relay:
+  max_fe: 2
+  max_be: 2
+  ring_buffer_size: 104857600 # 100MB
+  reaper_timeout: 2s
+  control_port: 5555
+  zmq_start_port: 2350
+  zmq_end_port: 2380
+  srt_start_port: 2300
+  srt_end_port: 2330
+log:
+  level: debug

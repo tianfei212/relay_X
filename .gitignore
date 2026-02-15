@@ -1,0 +1,23 @@
+.env.local.json
+*.log
+*.out
+*.test
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go build outputs
+/bin/
+/dist/
+
+# Local build artifacts
+/server_test/server_test
+
+# IDE
+.idea/
+.vscode/
+.trea/
+
+# macOS
+.DS_Store

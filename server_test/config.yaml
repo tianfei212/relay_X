@@ -1,0 +1,12 @@
+gateway_addr: "100.115.247.57:5555"
+data_host: "100.115.247.57"
+auth_secret: "dummy_secret"
+be_id: "be-simulator-01"
+zmq_conn_limit: 3
+srt_conn_limit: 3
+srt_ports:
+  - 2320
+  - 2325
+zmq_ports:
+  - 2350
+  - 2355
