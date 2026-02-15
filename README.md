@@ -45,7 +45,6 @@ cp .env.local.json.example .env.local.json
 2. 按需修改：
 
 - [configs/config.yaml](file:///home/ubuntu/codes/go_work/relay_X/configs/config.yaml)
-- `.env.local.json`（本文件不要提交到仓库）
 
 `.env.local.json` 结构如下：
 
