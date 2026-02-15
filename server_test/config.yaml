@@ -1,5 +1,5 @@
-gateway_addr: "100.115.247.57:5555"
-data_host: "100.115.247.57"
+gateway_addr: "localhost:5555"
+data_host: "localhost"
 auth_secret: "dummy_secret"
 be_id: "be-simulator-01"
 zmq_conn_limit: 3
