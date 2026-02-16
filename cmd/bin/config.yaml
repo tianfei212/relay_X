@@ -1,0 +1,30 @@
+gateway:
+  tcp_port: 5555
+  max_connections: 2000
+  auth_timeout: 30s
+  shutdown_timeout: 10s
+
+zeromq:
+  port_range: "2300-2320"
+  sndhwm: 2048
+  rcvhwm: 2048
+  sndbuf: 8388608
+  rcvbuf: 8388608
+  linger: 0
+  reconnect_ivl: 100
+
+gosrt:
+  port_range: "2350-2380"
+  latency: 50
+  maxbw: 0
+  ipttl: 64
+
+logging:
+  level: info
+  format: json
+  output: console
+  file_path: ./gateway.log
+  max_size: 64MB
+  max_age: 7
+  compress: true
+

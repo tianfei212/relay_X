@@ -14,6 +14,12 @@
 # Local build artifacts
 /server_test/server_test
 
+# Local media / test fixtures
+*.MOV
+*.mov
+*.MP4
+*.mp4
+
 # IDE
 .idea/
 .vscode/

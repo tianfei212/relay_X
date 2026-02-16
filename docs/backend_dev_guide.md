@@ -1289,7 +1289,7 @@ mode live
 2) ffmpeg 推流到 srt-live-server（示例）：
 
 ```bash
-ffmpeg -re -stream_loop -1 -i ./client_test/IMG_4127.MOV \
+ffmpeg -re -stream_loop -1 -i <your_video_file>.mov \
   -c copy -f mpegts "srt://127.0.0.1:30000?mode=caller&latency=120"
 ```
 

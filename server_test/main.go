@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -18,8 +19,20 @@ import (
 // Date: 2026-02-15
 
 func main() {
-	if err := config.Load("./config.yaml"); err != nil {
+	cfgPath := flag.String("config", "./config.yaml", "配置文件路径")
+	overrideGateway := flag.String("gateway", "", "覆盖 gateway_addr (host:port)")
+	overrideDataHost := flag.String("data-host", "", "覆盖 data_host")
+	flag.Parse()
+
+	if err := config.Load(*cfgPath); err != nil {
 		log.Fatalf("加载配置失败: %v", err)
+	}
+
+	if strings.TrimSpace(*overrideGateway) != "" {
+		config.GlobalConfig.GatewayAddr = strings.TrimSpace(*overrideGateway)
+	}
+	if strings.TrimSpace(*overrideDataHost) != "" {
+		config.GlobalConfig.DataHost = strings.TrimSpace(*overrideDataHost)
 	}
 
 	fmt.Println("后端程序启动...")
@@ -58,45 +71,39 @@ func main() {
 	var clientsMu sync.Mutex
 	var dataClients []*client.DataClient
 	connected := make(map[int]bool)
-	connectedByProto := map[string]int{"zmq": 0, "srt": 0}
 	dataHost := strings.TrimSpace(config.GlobalConfig.DataHost)
 	if dataHost == "" {
 		if parts := strings.Split(config.GlobalConfig.GatewayAddr, ":"); len(parts) > 0 && parts[0] != "" {
 			dataHost = parts[0]
 		}
 	}
-	connectOne := func(proto string, port int) {
+	connectOne := func(port int) {
 		if port <= 0 {
 			return
 		}
 		limit := 2
-		if proto == "zmq" && config.GlobalConfig.ZMQConnLimit > 0 {
+		if config.GlobalConfig.ZMQConnLimit > 0 {
 			limit = config.GlobalConfig.ZMQConnLimit
-		}
-		if proto == "srt" && config.GlobalConfig.SRTConnLimit > 0 {
-			limit = config.GlobalConfig.SRTConnLimit
 		}
 		clientsMu.Lock()
 		if connected[port] {
 			clientsMu.Unlock()
 			return
 		}
-		if connectedByProto[proto] >= limit {
+		if len(dataClients) >= limit {
 			clientsMu.Unlock()
 			return
 		}
 		connected[port] = true
-		connectedByProto[proto]++
 		clientsMu.Unlock()
 
-		id := config.GlobalConfig.BEID + "-" + proto
-		dc := client.NewDataClient(proto, port, "BE", id)
+		id := config.GlobalConfig.BEID
+		dc := client.NewDataClient(port, "BE", id)
 		dc.SetHost(dataHost)
 		if err := connectWithRetry(dc, 60, 50*time.Millisecond); err != nil {
-			fmt.Printf("[%s-%d] 连接失败: %v\n", proto, port, err)
+			fmt.Printf("[data-%d] 连接失败: %v\n", port, err)
 			clientsMu.Lock()
 			delete(connected, port)
-			connectedByProto[proto]--
 			clientsMu.Unlock()
 			return
 		}
@@ -112,10 +119,9 @@ func main() {
 				continue
 			}
 			if g.ZMQPort > 0 {
-				connectOne("zmq", g.ZMQPort)
-			}
-			if g.SRTPort > 0 {
-				connectOne("srt", g.SRTPort)
+				connectOne(g.ZMQPort)
+			} else if g.SRTPort > 0 {
+				connectOne(g.SRTPort)
 			}
 		}
 	}()
@@ -123,10 +129,7 @@ func main() {
 	go func() {
 		for s := range controlClient.PortStateChan() {
 			for _, p := range s.ZMQEmptyPorts {
-				connectOne("zmq", p)
-			}
-			for _, p := range s.SRTEmptyPorts {
-				connectOne("srt", p)
+				connectOne(p)
 			}
 		}
 	}()
@@ -182,8 +185,8 @@ func startDataPlaneTelemetry(getClients func() []*client.DataClient) {
 			rxMbps := float64(drx*8) / 1e6
 			txMbps := float64(dtx*8) / 1e6
 
-			fmt.Printf("[%s-%d][DATA] rx=%.2fMbps tx=%.2fMbps total_rx=%d total_tx=%d\n",
-				dc.Protocol(), dc.Port(), rxMbps, txMbps, rx, tx)
+			fmt.Printf("[data-%d][DATA] rx=%.2fMbps tx=%.2fMbps total_rx=%d total_tx=%d\n",
+				dc.Port(), rxMbps, txMbps, rx, tx)
 		}
 	}
 }

@@ -5,57 +5,44 @@
 ## 功能特性
 
 - 模拟前端客户端连接到网关
-- 执行身份验证和注册过程
-- 发送心跳消息维持连接
-- 接收并统计网关发送的各种消息类型
-- 支持单个连接测试和压力测试
-- 模拟视频数据传输场景
+- 通过 5555 控制面申请数据端口（port_acquire -> port_grant）
+- 在同一数据端口同时测试 TCP 与 UDP 的双向透传（依赖后端回显程序）
 
 ## 测试文件
 
 - `test_client.go`: 主测试程序源码
-- `IMG_4127.MOV`: 用于测试的视频文件
+  - 适配 V3：不区分 zmq/srt；同一端口同时跑 TCP+UDP
+- `IMG_4127.MOV`: 历史测试素材，不随仓库分发（本地自备）
 
 ## 使用方法
 
-### 单个连接测试
+### 前置条件（启动后端回显）
+
+先启动后端模拟器（server_test），让网关的数据端口有回显端：
 
 ```bash
-# 在 client_test 目录下运行
-go run test_client.go
+cd server_test
+go run .
 ```
 
-### 压力测试（100个客户端）
+### 单次测试（前端）
 
 ```bash
 # 在 client_test 目录下运行
-go run test_client.go load
+go run test_client.go -gateway 127.0.0.1:5555
 ```
 
 ## 测试结果说明
 
-- **成功连接**: 客户端成功连接到网关并完成身份验证
-- **连接限制**: 当达到网关配置的最大连接数（默认为2个前端连接）时，新连接会被拒绝
-- **消息类型**:
-  - `pong`: 心跳响应消息
-  - `log`: 日志推送消息
-  - `telemetry`: 遥测数据（带宽速度等）
-  - `port_alloc`: 端口分配消息
-  - `key_exchange`: 密钥交换消息
+- **成功**: 输出 `OK port=... session=...`，并且 TCP/UDP 均回显一致
+- **失败**: 通常是后端回显未启动，或网关数据端口范围未配置/未启动
 
 ## 配置说明
 
-根据 `configs/config.yaml` 文件配置：
-- `max_fe`: 最大前端连接数（默认为2）
-- `max_be`: 最大后端连接数（默认为2）
-- `auth_secret`: 认证密钥（默认为 "dummy_secret"）
+V3 不做鉴权检查，但仍复用 `configs/config.yaml` 中的数据端口范围字段（`relay.zmq_*` 与 `relay.srt_*`，V3 会合并为同一端口池）。
 
 ## 测试覆盖
 
-- TCP连接建立
-- JSON消息协议验证
-- 身份验证流程
-- 心跳维持机制
-- 消息接收处理
-- 连接数限制验证
-- 并发连接处理
+- 控制面：port_acquire / port_grant / port_release 基本流程
+- 数据面：同端口 TCP 透传回显
+- 数据面：同端口 UDP 透传回显
